@@ -1,0 +1,18 @@
+module Base
+{
+    /* The upgrade item. Modelled on vanilla Thread, read out of
+       generated/items/drainable.txt, because B42 uses namespaced
+       ItemType values (base:normal) where B41 used Type = Normal.
+       Getting that line wrong makes the item parse but fail to
+       instantiate, which shows up as a null pointer when you try to
+       spawn it. */
+
+    item BackpackUpgrade
+    {
+        DisplayCategory = Material,
+        ItemType = base:normal,
+        Weight = 0.5,
+        Icon = BackpackUpgrade,
+        SurvivalGear = true,
+    }
+}

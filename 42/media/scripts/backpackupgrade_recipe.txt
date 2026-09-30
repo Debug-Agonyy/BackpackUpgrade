@@ -1,0 +1,19 @@
+module Base
+{
+    craftRecipe MakeBackpackUpgrade
+    {
+        timedAction = SewingCloth,
+        time = 150,
+        category = Tailoring,
+        inputs
+        {
+            item 1 [Base.Needle;Base.Needle_Bone;Base.Needle_Brass;Base.Needle_Forged] mode:keep,
+            item 1 [Base.RippedSheets],
+            item 1 [Base.Bag_GolfBag;Base.Bag_GolfBag_Melee;Base.Bag_Schoolbag;Base.Bag_Schoolbag_Kids;Base.Bag_NormalHikingBag;Base.Bag_BigHikingBag;Base.Bag_SurvivorBag;Base.Bag_ALICEpack;Base.Bag_ALICEpack_Army;Base.Bag_WeaponBag;Base.Bag_InmateEscapedBag;Base.Bag_MoneyBag;Base.Bag_WorkerBag;Base.Bag_DuffelBag;Base.Bag_BreakdownBag;Base.Bag_DuffelBagTINT;Base.Bag_RifleCaseCloth;Base.Bag_RifleCaseCloth2;Base.Bag_ShotgunCaseCloth;Base.Bag_ShotgunCaseCloth2;Base.Bag_RifleCaseClothCamo;Base.Bag_ShotgunBag;Base.Bag_ShotgunSawnoffBag;Base.Bag_ShotgunDblBag;Base.Bag_ShotgunDblSawnoffBag;Base.Bag_BurglarBag;Base.Bag_Police;Base.Bag_Sheriff;Base.Bag_SWAT;Base.Bag_FishingBasket;Base.Bag_Schoolbag_Patches;Base.Bag_Schoolbag_Travel;Base.Bag_BigHikingBag_Travel;Base.Bag_HikingBag_Travel;Base.Bag_Schoolbag_Medical;Base.Bag_BaseballBag;Base.Bag_TennisBag;Base.Bag_FoodCanned;Base.Bag_FoodSnacks;Base.Bag_MedicalBag;Base.Bag_Military;Base.Bag_ToolBag;Base.Bag_ALICEpack_DesertCamo;Base.Bag_CrudeLeatherBag;Base.Bag_CrudeTarpBag;Base.Bag_HideSlingBag;Base.Bag_SheetSlingBag;Base.Bag_TarpSlingBag;Base.Bag_CraftedFramepack_Large;Base.Bag_CraftedFramepack_Small;Base.Bag_CraftedFramepack_Large2;Base.Bag_CraftedFramepack_Large3;Base.Bag_TarpFramepack_Small;Base.Bag_TarpFramepack_Large;Base.Bag_HydrationBackpack;Base.Bag_HydrationBackpack_Camo],
+        }
+        outputs
+        {
+            item 1 Base.BackpackUpgrade,
+        }
+    }
+}
