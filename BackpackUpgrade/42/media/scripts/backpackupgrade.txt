@@ -1,0 +1,15 @@
+module Base
+{
+    /* The upgrade item itself. Modelled on vanilla Thread.
+       ItemType = base:normal is B42 syntax; B41's Type = Normal parses
+       but fails to instantiate, which surfaces as a null pointer. */
+
+    item BackpackUpgrade
+    {
+        DisplayCategory = Material,     /* which crafting/inventory group it lists under */
+        ItemType = base:normal,         /* plain item: no uses, no condition, no fluid */
+        Weight = 0.5,
+        Icon = BackpackUpgrade,         /* resolves to media/textures/Item_BackpackUpgrade.png */
+        SurvivalGear = true,            /* flags it as gear rather than junk loot */
+    }
+}
