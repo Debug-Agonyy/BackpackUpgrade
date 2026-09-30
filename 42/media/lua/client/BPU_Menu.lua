@@ -1,108 +1,83 @@
--- BPU_Menu.lua
--- Client side: the right-click option, the local capacity change so the
--- UI reacts instantly, and the message that tells the server to record
--- the same thing on its own copy of the bag.
---
--- Why the server message is necessary: Project Zomboid does NOT
--- synchronise item mod data between client and server automatically.
--- A client-side write lives only in this session's memory, so it is gone
--- the moment you reconnect and the server hands you its copy back.
+-- BPU_Menu.lua -- client side: right-click option, instant UI feedback,
+-- and the message that tells the server to record the same change.
 
-require "BPU_Core"
+require "BPU_Core"                                  -- pulls in the shared rules (BPU table)
 
--- sendClientCommand exists in two shapes depending on build:
---     sendClientCommand(player, module, command, args)
---     sendClientCommand(module, command, args)
--- We tested both on 42.21 and BOTH delivered, which is why the server log
--- printed every line twice. The 4-argument form is the one kept, since it
--- names the player explicitly instead of relying on the engine to infer it.
--- The pcall stays as a guard: if a future build removes this overload, the
--- error is swallowed instead of breaking the whole install action.
+-- Send a command to the server. Client-only: singleplayer has no server.
 local function sendToServer(player, command, args)
-    if not isClient() then return end   -- singleplayer has no server to tell
-
+    if not isClient() then return end               -- singleplayer, nobody to tell
+    -- pcall guards against this overload vanishing in a future build
     pcall(function() sendClientCommand(player, BPU.MODULE, command, args) end)
 end
 
+-- First upgrade item found anywhere in the player's inventory, or nil.
 local function findUpgradeItem(player)
     return player:getInventory():FindAndReturn("Base.BackpackUpgrade")
 end
 
+-- Runs when the player clicks the context-menu option.
 local function onInstallUpgrade(player, bag)
-    local inv = player:getInventory()
-    local upgrade = findUpgradeItem(player)
-    if not upgrade then return end
-    if not BPU.canUpgrade(bag) then return end
+    local inv     = player:getInventory()           -- needed later to consume the item
+    local upgrade = findUpgradeItem(player)         -- the kit being spent
+    if not upgrade then return end                  -- nothing to install
+    if not BPU.canUpgrade(bag) then return end      -- already at the cap
 
-    -- Work out the new state locally first.
-    local base     = BPU.getBaseCapacity(bag)
-    local newCount = BPU.getUpgradeCount(bag) + 1
+    local base     = BPU.getBaseCapacity(bag)       -- capacity before any upgrades
+    local newCount = BPU.getUpgradeCount(bag) + 1   -- absolute new count, not a delta
 
-    local md = bag:getModData()
-    md.bpuBaseCap = base
-    md.bpuCount   = newCount
+    local md = bag:getModData()                     -- per-item storage that persists
+    md.bpuBaseCap = base                            -- remember the original number
+    md.bpuCount   = newCount                        -- remember how many are installed
 
-    BPU.applyCapacity(bag)
+    BPU.applyCapacity(bag)                          -- apply locally so the UI updates now
 
-    -- Tell the server the ABSOLUTE new state, not "add one". If the
-    -- message arrives twice, or arrives late, the result is identical.
-    -- getID() is the item's unique id; the server's copy of the same
-    -- item carries the same id, which is how it finds it again.
+    -- Mod data does NOT sync to the server on its own, so tell it explicitly.
+    -- Absolute values mean a duplicated packet changes nothing.
     sendToServer(player, "install", {
-        itemID  = bag:getID(),
+        itemID  = bag:getID(),                      -- same id identifies the server's copy
         count   = newCount,
         baseCap = base,
     })
 
-    -- Consume the upgrade item. Ordinary inventory changes DO sync to
-    -- the server on their own; it is only mod data that does not.
-    inv:DoRemoveItem(upgrade)
-
+    inv:DoRemoveItem(upgrade)                       -- consume the kit (this DOES sync)
     player:Say("Backpack upgraded. Capacity now " .. tostring(bag:getCapacity()))
 end
 
+-- Builds the right-click menu entry when the player clicks an inventory item.
 local function onFillInventoryObjectContextMenu(playerNum, context, items)
-    local player = getSpecificPlayer(playerNum)
+    local player = getSpecificPlayer(playerNum)     -- who opened the menu
 
     for _, entry in ipairs(items) do
-        -- The items list is inconsistent: sometimes an InventoryItem
-        -- directly, sometimes a wrapper table with an .items array when
-        -- identical items are stacked. Handle both.
-        local item = entry
+        local item = entry                          -- usually an InventoryItem...
         if not instanceof(entry, "InventoryItem") then
-            item = entry.items[1]
+            item = entry.items[1]                   -- ...but a wrapper table when stacked
         end
 
-        if item and BPU.canUpgrade(item) then
+        if item and BPU.canUpgrade(item) then       -- a bag with room for another upgrade
             local option = context:addOption("Install Backpack Upgrade", player, onInstallUpgrade, item)
 
-            -- Grey the option out rather than hiding it when the player
-            -- has no upgrade item, so they can see the action exists.
-            if not findUpgradeItem(player) then
-                option.notAvailable = true
+            if not findUpgradeItem(player) then     -- no kit on hand
+                option.notAvailable = true          -- grey it out instead of hiding it
             end
-            return
+            return                                  -- one option per menu, stop here
         end
     end
 end
 
--- After login, rebuild capacity on every bag the player is carrying.
--- The upgrade count survived in mod data; capacity did not, because it
--- resets to the item script's value whenever the item is loaded.
---
--- OnCreatePlayer fires before the inventory has finished populating, so
--- a one-shot tick handler waits a couple of seconds before looking.
-local reapplyTicks = 0
+-- Capacity is a runtime value that resets to the item script's number on
+-- every load, so it has to be rebuilt from the stored count after login.
+local reapplyTicks = 0                              -- frame counter for the delay below
+
 local function reapplyTick()
     reapplyTicks = reapplyTicks + 1
-    if reapplyTicks < 150 then return end   -- roughly 2.5s at 60fps
+    if reapplyTicks < 150 then return end           -- wait ~2.5s; inventory isn't ready at login
 
-    Events.OnTick.Remove(reapplyTick)
+    Events.OnTick.Remove(reapplyTick)               -- one-shot, unhook immediately
 
     local player = getPlayer()
     if not player then return end
 
-    local list = player:getInventory():getItems()
+    local list = player:getInventory():getItems()   -- Java ArrayList, so 0-based
     for i = 0, list:size() - 1 do
         local item = list:get(i)
         if BPU.isBackpack(item) then
@@ -112,18 +87,15 @@ local function reapplyTick()
                   " count=" .. tostring(md.bpuCount) ..
                   " base=" .. tostring(md.bpuBaseCap) ..
                   " capacity=" .. tostring(item:getCapacity()))
-            BPU.applyCapacity(item)
+            BPU.applyCapacity(item)                 -- rebuild capacity from the stored count
         end
     end
 
-    -- Ask the server to do the same on its side, so its copy of each bag
-    -- agrees about how much fits. Without this the server would still
-    -- think the bag holds its original amount until someone upgrades again.
-    sendToServer(player, "reapply", { ping = 1 })
+    sendToServer(player, "reapply", { ping = 1 })   -- have the server rebuild its copies too
 end
 
 Events.OnFillInventoryObjectContextMenu.Add(onFillInventoryObjectContextMenu)
 Events.OnCreatePlayer.Add(function()
-    reapplyTicks = 0
+    reapplyTicks = 0                                -- reset in case of a second spawn
     Events.OnTick.Add(reapplyTick)
 end)
