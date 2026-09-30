@@ -41,6 +41,7 @@ Top of `42/media/lua/shared/BPU_Core.lua`:
 BPU.CAP_PER_UPGRADE = 8    -- capacity added per install
 BPU.MAX_UPGRADES    = 6    -- installs allowed per bag
 BPU.HARD_CAP        = 50   -- engine ceiling, raising this does nothing
+BPU.KEEP_ENCUMBRANCE = true    -- false = upgrades add space only
 ```
 
 ## License
