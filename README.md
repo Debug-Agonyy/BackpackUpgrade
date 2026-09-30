@@ -1,6 +1,6 @@
 # Backpack Upgrade
 
-A Project Zomboid **Build 42** mod that raises the carrying capacity of any back-worn bag with a craftable upgrade kit.
+A Project Zomboid **Build 42** mod that raises the carrying capacity of any backworn bag with a craftable upgrade kit.
 
 Works in multiplayer, and the upgrade survives relogs.
 
